@@ -42,15 +42,19 @@ uint8_t pot = 0;
 #define Ts TrMax / 10
 #define CUERPO int32_t
 
-#define DEM 3
-// const CUERPO consA[DEM] = {A0, -100};
-const CUERPO consA[DEM] = {100, 116, 36};
+#define DEM 2
+// const CUERPO consA[DEM] = {1};
+// const CUERPO consA[DEM] = {100, 116, 36};
+// const CUERPO consA[DEM] = {100, -62}; //tustin
+const CUERPO consA[DEM] = {147, -100}; //tustis
 CUERPO state[DEM];
 
-#define NUM 3
-// const CUERPO consB[NUM] = {-630, 600};
-const CUERPO consB[NUM] = {0, 138, 72};
-//const double consBoverA0[NUM] = {(-0.6780383795309168349), (0.01279317697228144965)};
+#define NUM 2
+// const CUERPO consB[NUM] = {1};
+// const CUERPO consB[NUM] = {0, 138, 72};
+// const CUERPO consB[NUM] = {-600, 575}; //tustin
+const CUERPO consB[NUM] = {-631, 600};
+
 CUERPO error[NUM];
 
 void output(uint8_t inValue, uint8_t outValue, int16_t inInternal, int16_t outInternal)
@@ -92,7 +96,7 @@ void output(uint8_t inValue, uint8_t outValue, int16_t inInternal, int16_t outIn
 void setup()
 {
 #ifdef DEBUG
-  Serial.begin(9600);
+  Serial.begin(115200);
 #endif
   // LCD config
   lcd.begin(16, 2);
@@ -118,19 +122,20 @@ void loop()
 {
 
 #ifdef DEBUG
-  Serial.print("state: ");
+  Serial.print("state: [");
   for (int i = 0; i < DEM; i++)
   {
     Serial.print(state[i]);
     Serial.print(", ");
   }
-  Serial.println();
-  Serial.print("error: ");
+  Serial.println("]");
+  Serial.print("error: [");
   for (int i = 0; i < NUM; i++)
   {
     Serial.print(error[i]);
     Serial.print(", ");
   }
+  Serial.println("]");
 
 #endif
 
@@ -172,17 +177,28 @@ void loop()
 #endif
   }
 
-  state[0] = state[0] > LIM ? LIM : state[0];
-  state[0] = state[0] < -LIM ? -LIM : state[0];
+  #ifdef DEBUG
+    Serial.print("pstate0: ");
+    Serial.println(state[0]);
+  #endif
+  // state[0] = state[0] > LIM ? LIM : state[0];
+  // state[0] = state[0] < -LIM ? -LIM : state[0];
   state[0] /= consA[0];
+
+  #ifdef DEBUG
+    Serial.print("state0: ");
+    Serial.println(state[0]);
+  #endif
 
   // output u[k]
   //#define OFFOUT 1000
+  state[0] = state[0] > OFFIN ? OFFIN : state[0];
+  state[0] = state[0] < -OFFIN ? -OFFIN : state[0];
   uint8_t out = map(state[0], -OFFIN, OFFIN, 0, 255);
 #ifdef DEBUG
-  Serial.print("out1: ");
+  Serial.print("u[k]: ");
   Serial.print(state[0]);
-  Serial.print(", in2: ");
+  Serial.print(", out: ");
   Serial.println(out);
 #endif
   output(in, out, error[0], state[0]);
