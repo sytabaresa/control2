@@ -46,14 +46,14 @@ uint8_t pot = 0;
 // const CUERPO consA[DEM] = {1};
 // const CUERPO consA[DEM] = {100, 116, 36};
 // const CUERPO consA[DEM] = {100, -62}; //tustin
-const CUERPO consA[DEM] = {147, -100}; //tustis
+const CUERPO consA[DEM] = {1468, -1000}; //tustis
 CUERPO state[DEM];
 
 #define NUM 2
 // const CUERPO consB[NUM] = {1};
 // const CUERPO consB[NUM] = {0, 138, 72};
 // const CUERPO consB[NUM] = {-600, 575}; //tustin
-const CUERPO consB[NUM] = {-631, 600};
+const CUERPO consB[NUM] = {-6312, 6000};
 
 CUERPO error[NUM];
 
@@ -177,18 +177,17 @@ void loop()
 #endif
   }
 
-  #ifdef DEBUG
-    Serial.print("pstate0: ");
-    Serial.println(state[0]);
-  #endif
+#ifdef DEBUG
+  Serial.print("pstate0: ");
+  Serial.println(state[0]);
+#endif
   // state[0] = state[0] > LIM ? LIM : state[0];
   // state[0] = state[0] < -LIM ? -LIM : state[0];
   state[0] /= consA[0];
-
-  #ifdef DEBUG
-    Serial.print("state0: ");
-    Serial.println(state[0]);
-  #endif
+#ifdef DEBUG
+  Serial.print("state0: ");
+  Serial.println(state[0]);
+#endif
 
   // output u[k]
   //#define OFFOUT 1000
