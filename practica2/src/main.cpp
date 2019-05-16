@@ -3,7 +3,7 @@
 
 // analog input in
 #define IN A5
-
+#define TRIG A4
 // sampling time input pin
 #define POT A7
 
@@ -90,6 +90,33 @@ void output(uint8_t inValue, uint8_t outValue, int16_t inInternal, int16_t outIn
   }
 }
 
+#define TRIGGER 20
+uint16_t smartDelay(unsigned long ms)
+{
+  // uint16_t out = analogRead(TRIG);
+  // uint16_t out1 = out;
+  unsigned long fin = millis() + ms;
+  do
+  {
+    // out = analogRead(TRIG);
+    // // Serial.print("salida");
+    // // Serial.println(out);
+    // if (abs(out - out1) > TRIGGER)
+    // {
+    //   // Update registers to new values
+    //   for (int i = 0; i < DEM; i++)
+    //     state[i] = 0;
+
+    //   for (int i = 0; i < NUM; i++)
+    //     error[i] = 0;
+
+    //   return analogRead(IN);
+    // }
+    // out1 = out;
+  } while (millis() < fin);
+  return analogRead(IN);
+}
+
 /**
  * SETUP 
  */
@@ -139,8 +166,9 @@ void loop()
 
 #endif
 
-  // e[k] readed
-  uint16_t in = analogRead(IN);
+  // e[k] readed in Ts
+  uint16_t in = smartDelay(TrMax / pot);
+  // uint16_t in = analogRead(IN);
 
 #define OFFIN 200
 #define LIM 10000000
@@ -220,6 +248,6 @@ void loop()
   error[0] = 0;
 
   // Ts delay
-  delay(TrMax / pot);
+  // delay(TrMax / pot);
   // delay(1000);
 }
