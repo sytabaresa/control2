@@ -39,51 +39,53 @@ uint8_t pot = 0;
  * C(z) = -------------------------------------------------
  *          a0 + a1*z^(-1) + a2*z^(-2) + ... + an*z^(-m)
  * 
- * constA0 = [a0, a1, a2, ... , an] (length m ==> DEM = m)
- * constB0 = [b0, b1, b2, ... , bn] (length n ==> NUM = n)
+ * constA = [a0, a1, a2, ... , an] (length m ==> DEM = m)
+ * constB = [b0, b1, b2, ... , bn] (length n ==> NUM = n)
  */
 #define Ts TrMax / 10
 
 #define CUERPO int32_t //cuerpo para los cálculos (int8_t, int16_t, int32_t, float, double, ...)
 
+#define NUM 2 // n
 #define DEM 2 // m
+
+// [e[0], e[1], e[2], ..., e[n]]
+CUERPO error[NUM];
 
 // [u[0], u[1], u[2], ..., u[m]]
 CUERPO state[DEM];
 
 /*
-* Denominator from many controllers:
+* controllers:
 */
-// const CUERPO consA[DEM] = {1}; //unitario
-const CUERPO consA[DEM] = {-1468, 1000}; // dif adelante
-// const CUERPO consA[DEM] = {1000, -520}; // dif atras
-// const CUERPO consA[DEM] = {1240, -760}; // trapesoidal
-// const CUERPO consA[DEM] = {300, -185}; // invarianza al escalóñ
 
+//unitario
+// const CUERPO consB[NUM] = {1};
+// const CUERPO consA[DEM] = {1};
 
-#define NUM 2 // n
+// dif adelante
+// const CUERPO consB[NUM] = {-6000, 5680};
+// const CUERPO consA[DEM] = {1000, -520}; 
 
-// [e[0], e[1], e[2], ..., e[n]]
-CUERPO error[NUM];
+// dif atras
+const CUERPO consA[DEM] = {1468, -1000}; 
+const CUERPO consB[NUM] = {-6312, 6000};
 
-/*
-* Numerator from many controllers:
-*/
-// const CUERPO consB[NUM] = {1}; //unitario
-const CUERPO consB[NUM] = {6312, -6000}; //dif adelante
-// const CUERPO consB[NUM] = {-6000, 5680}; //dif atras
-// const CUERPO consB[NUM] = {-6312, 6000}; //dif adelante
-// const CUERPO consB[NUM] = {-6160, 5840}; //trapesoidal
-// const CUERPO consB[NUM] = {-1800, 3723}; // invarianza al escalóñ
+//trapesoidal
+// const CUERPO consB[NUM] = {-6160, 5840}; 
+// const CUERPO consA[DEM] = {1240, -760};
 
+// invarianza al escalón
+// const CUERPO consA[DEM] = {300, -185};
+// const CUERPO consB[NUM] = {-1800, 1723};
 
 void output(uint8_t inValue, uint8_t outValue, int16_t inInternal, int16_t outInternal)
 {
   // lcd.clear();
   // lcd.setCursor(0, 0);
 
-  // pot = analogRead(POT) >> 2;
-  // pot = map(pot, 0, 255, 1, 100);
+  pot = analogRead(POT) >> 2;
+  pot = map(pot, 0, 255, 1, 100);
   // lcd.print(" Ts/");
   // lcd.print(pot);
   // pot < 10 ? lcd.print(" ") : 0;
@@ -95,7 +97,7 @@ void output(uint8_t inValue, uint8_t outValue, int16_t inInternal, int16_t outIn
 }
 
 #define TRIGGER 20
-uint16_t smartDelay(unsigned long ms)
+void smartDelay(unsigned long ms)
 {
   // uint16_t out = analogRead(TRIG);
   // uint16_t out1 = out;
@@ -118,7 +120,7 @@ uint16_t smartDelay(unsigned long ms)
     // }
     // out1 = out;
   } while (millis() < fin);
-  return analogRead(IN);
+  return;
 }
 
 /**
@@ -130,7 +132,7 @@ void setup()
   Serial.begin(115200);
 #endif
   // LCD config
-  //lcd.begin(16, 2);
+  // lcd.begin(16, 2);
 
   // analog input config
   pinMode(IN, INPUT);
@@ -162,7 +164,7 @@ void loop()
 {
 
   // Ts delay and e[k] read in Ts
-  uint16_t in = smartDelay(TrMax / pot);
+  uint16_t in = analogRead(IN);
 
 // scale
 #define OFFIN 512
@@ -215,4 +217,5 @@ void loop()
   state[0] = 0;
   error[0] = 0;
 
+  smartDelay(TrMax / pot);
 }
