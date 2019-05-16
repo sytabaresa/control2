@@ -44,16 +44,21 @@ uint8_t pot = 0;
 
 #define DEM 2
 // const CUERPO consA[DEM] = {1};
-// const CUERPO consA[DEM] = {100, 116, 36};
-// const CUERPO consA[DEM] = {100, -62}; //tustin
-const CUERPO consA[DEM] = {1468, -1000}; //tustis
+const CUERPO consA[DEM] = {-1468, 1000}; // dif adelante
+// const CUERPO consA[DEM] = {1000, -520}; // dif atras
+// const CUERPO consA[DEM] = {1240, -760}; // trapesoidal
+// const CUERPO consA[DEM] = {300, -185}; // invarianza al escalóñ
+
 CUERPO state[DEM];
 
 #define NUM 2
 // const CUERPO consB[NUM] = {1};
-// const CUERPO consB[NUM] = {0, 138, 72};
-// const CUERPO consB[NUM] = {-600, 575}; //tustin
-const CUERPO consB[NUM] = {-6312, 6000};
+const CUERPO consB[NUM] = {6312, -6000}; //dif adelante
+// const CUERPO consB[NUM] = {-6000, 5680}; //dif atras
+// const CUERPO consB[NUM] = {-6312, 6000}; //dif adelante
+// const CUERPO consB[NUM] = {-6160, 5840}; //trapesoidal
+// const CUERPO consB[NUM] = {-1800, 3723}; // invarianza al escalóñ
+
 
 CUERPO error[NUM];
 
