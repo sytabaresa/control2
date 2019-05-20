@@ -1,6 +1,6 @@
 {
     "terminal.integrated.env.linux": {
-        "PATH": "/home/syta/.platformio/penv/bin:/home/syta/.platformio/penv:/usr/local/bin:/usr/local/sbin:/usr/bin:/opt/android-sdk/emulator:/opt/android-sdk/platform-tools:/opt/android-sdk/tools:/opt/android-sdk/tools/bin:/usr/lib/jvm/default/bin:/opt/microchip/xc8/v2.00/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/var/lib/snapd/snap/bin",
+        "PATH": "/home/syta/.platformio/penv/bin:/home/syta/.platformio/penv:/usr/local/bin:/usr/local/sbin:/usr/bin:/opt/android-sdk/emulator:/opt/android-sdk/platform-tools:/opt/android-sdk/tools:/opt/android-sdk/tools/bin:/usr/lib/jvm/default/bin:/opt/microchip/xc8/v2.00/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/var/lib/snapd/snap/bin:/home/syta/bin:/home/syta/go/bin",
         "PLATFORMIO_CALLER": "vscode"
     }
 }

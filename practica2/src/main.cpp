@@ -27,10 +27,13 @@ int outPins[] = {D8, D7, D6, D5, D4, D3, D2, D1};
 // LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 // Base Tr
-#define TrMax 780
+#define TrMax 800
+#define Ts TrMax / 10
 
 // global variables
 uint8_t pot = 0;
+uint16_t in = 0;
+uint8_t out = 0;
 
 // Control variables
 
@@ -42,7 +45,6 @@ uint8_t pot = 0;
  * constA = [a0, a1, a2, ... , an] (length m ==> DEM = m)
  * constB = [b0, b1, b2, ... , bn] (length n ==> NUM = n)
  */
-#define Ts TrMax / 10
 
 #define CUERPO int32_t //cuerpo para los cálculos (int8_t, int16_t, int32_t, float, double, ...)
 
@@ -63,19 +65,31 @@ CUERPO state[DEM];
 // const CUERPO consB[NUM] = {1};
 // const CUERPO consA[DEM] = {1};
 
-// dif adelante
-// const CUERPO consB[NUM] = {-6000, 5680};
-// const CUERPO consA[DEM] = {1000, -520}; 
+// dif atras Ts = Tr / 10
+// const CUERPO consA[DEM] = {1468, -1000};
+// const CUERPO consB[NUM] = {-6312, 6000};
 
-// dif atras
-const CUERPO consA[DEM] = {1468, -1000}; 
-const CUERPO consB[NUM] = {-6312, 6000};
+// dif atras Ts = 7 * Tr
+// const CUERPO consA[DEM] = {4360, -1000};
+// const CUERPO consB[NUM] = {-8240, 6000};
 
-//trapesoidal
-// const CUERPO consB[NUM] = {-6160, 5840}; 
+//dif adelante Ts = Tr / 10
+const CUERPO consA[DEM] = {1000, -952};
+const CUERPO consB[NUM] = {-6000, 5968};
+
+// dif adelante Ts = 4 * Tr
+// const CUERPO consA[DEM] = {1000, 919};
+// const CUERPO consB[NUM] = {-6000, 4720};
+
+// trapesoidal Ts = Tr / 10
+// const CUERPO consB[NUM] = {-6160, 5840};
 // const CUERPO consA[DEM] = {1240, -760};
 
-// invarianza al escalón
+// trapesoidal Ts = 10 * Tr
+// const CUERPO consB[NUM] = {-7600, 4400};
+// const CUERPO consA[DEM] = {3400, 1400};
+
+// invarianza al escalón Ts = Tr / 10
 // const CUERPO consA[DEM] = {300, -185};
 // const CUERPO consB[NUM] = {-1800, 1723};
 
@@ -97,29 +111,41 @@ void output(uint8_t inValue, uint8_t outValue, int16_t inInternal, int16_t outIn
 }
 
 #define TRIGGER 20
-void smartDelay(unsigned long ms)
+void smartDelay(unsigned long us)
 {
   // uint16_t out = analogRead(TRIG);
   // uint16_t out1 = out;
-  unsigned long fin = millis() + ms;
+  unsigned long fin = micros() + us;
   do
   {
-    // out = analogRead(TRIG);
-    // // Serial.print("salida");
-    // // Serial.println(out);
-    // if (abs(out - out1) > TRIGGER)
-    // {
-    //   // Update registers to new values
-    //   for (int i = 0; i < DEM; i++)
-    //     state[i] = 0;
+// out = analogRead(TRIG);
+// // Serial.print("salida");
+// // Serial.println(out);
+// if (abs(out - out1) > TRIGGER)
+// {
+//   // Update registers to new values
+//   for (int i = 0; i < DEM; i++)
+//     state[i] = 0;
 
-    //   for (int i = 0; i < NUM; i++)
-    //     error[i] = 0;
+//   for (int i = 0; i < NUM; i++)
+//     error[i] = 0;
 
-    //   return analogRead(IN);
-    // }
-    // out1 = out;
-  } while (millis() < fin);
+//   return analogRead(IN);
+// }
+// out1 = out;
+#if DEBUG
+    Serial.print(in);
+    Serial.print(",");
+    Serial.print(error[0]);
+    Serial.print(",");
+    Serial.print(state[0]);
+    Serial.print(",");
+    Serial.print(out);
+    Serial.print(",");
+    Serial.println(pot);
+
+#endif
+  } while (micros() < fin);
   return;
 }
 
@@ -153,8 +179,6 @@ void setup()
     state[i] = 0;
 }
 
-
-
 /*
 *
 * MAIN LOOP
@@ -164,7 +188,7 @@ void loop()
 {
 
   // Ts delay and e[k] read in Ts
-  uint16_t in = analogRead(IN);
+  in = analogRead(IN);
 
 // scale
 #define OFFIN 512
@@ -194,13 +218,13 @@ void loop()
   /*
    * output u[k]
    */
-  
+
   // saturation of values
   state[0] = state[0] > OFFIN ? OFFIN : state[0];
   state[0] = state[0] < -OFFIN ? -OFFIN : state[0];
 
   // output mapping to 8 bits
-  uint8_t out = map(state[0], -OFFIN, OFFIN, 0, 255);
+  out = map(state[0], -OFFIN, OFFIN, 0, 255);
   output(in, out, error[0], state[0]);
 
   // Update registers to new values
@@ -214,8 +238,8 @@ void loop()
 
   // reset current state and error:
   // u[k] = 0; e[k] = 0
+
+  smartDelay(Ts / pot * 1000);
   state[0] = 0;
   error[0] = 0;
-
-  smartDelay(TrMax / pot);
 }
