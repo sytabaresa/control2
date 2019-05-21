@@ -1,3 +1,9 @@
+/**
+ * GENERAL SYSTEMS CONTROL PROGRAM
+ * By: Sebastian Yesid Tabares Amaya
+ * Licence: GPLv3
+ */
+
 #include <Arduino.h>
 
 // analog input in
@@ -60,8 +66,8 @@ FIELD state[DEN];
 // #define T n * Ts
 
 /**
-* controllers:
-* Comment and uncomment according to controller in testing, see also T and NUM/DEN definition above
+* Controllers:
+* comment and uncomment according to controller in testing, see also T and NUM/DEN definition above
 */
 
 // ZOH (NUM = 1 and DEN = 1)
@@ -156,7 +162,7 @@ void setup()
 
   // analog input config
   pinMode(IN, INPUT);
-  
+
   // DAC outputs config
   for (int i = 0; i < 8; i++)
     pinMode(outPins[i], OUTPUT);
