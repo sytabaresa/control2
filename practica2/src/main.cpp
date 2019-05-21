@@ -27,8 +27,14 @@ int outPins[] = {D8, D7, D6, D5, D4, D3, D2, D1};
 // LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 // Base Tr
-#define TrMax 800
+#define TrMax 800000
+
+// IMPORTANTE: comentar y descomentar segun los controladores
+// #define Ts TrMax / 100
 #define Ts TrMax / 10
+// #define n 5 // multiplicador para los controladores con este coeficiente
+// #define Ts TrMax / 10 * n
+
 
 // global variables
 uint8_t pot = 0;
@@ -46,7 +52,7 @@ uint8_t out = 0;
  * constB = [b0, b1, b2, ... , bn] (length n ==> NUM = n)
  */
 
-#define CUERPO int32_t //cuerpo para los cálculos (int8_t, int16_t, int32_t, float, double, ...)
+#define CUERPO double //cuerpo para los cálculos (int8_t, int16_t, int32_t, float, double, ...)
 
 #define NUM 2 // n
 #define DEM 2 // m
@@ -59,39 +65,68 @@ CUERPO state[DEM];
 
 /*
 * controllers:
+* comentar y descomentar segun el controlador a probar. ver tambien la deficion de Ts.
 */
 
 //unitario
 // const CUERPO consB[NUM] = {1};
 // const CUERPO consA[DEM] = {1};
 
+// dif atras Ts = Tr / 100
+const CUERPO consA[DEM] = {1048, -1000};
+const CUERPO consB[NUM] = {-6032, 6000};
+
 // dif atras Ts = Tr / 10
 // const CUERPO consA[DEM] = {1468, -1000};
 // const CUERPO consB[NUM] = {-6312, 6000};
 
-// dif atras Ts = 7 * Tr
+// dif atras Ts = 7 * Tr / 10
 // const CUERPO consA[DEM] = {4360, -1000};
 // const CUERPO consB[NUM] = {-8240, 6000};
 
-//dif adelante Ts = Tr / 10
-const CUERPO consA[DEM] = {1000, -952};
-const CUERPO consB[NUM] = {-6000, 5968};
+//dif adelante Ts = Tr / 100
+//  const CUERPO consA[DEM] = {1000, -952};
+//  const CUERPO consB[NUM] = {-6000, 5968};
 
-// dif adelante Ts = 4 * Tr
+// dif adelante Ts = 4 * Tr / 10
 // const CUERPO consA[DEM] = {1000, 919};
 // const CUERPO consB[NUM] = {-6000, 4720};
+
+// dif adelante Ts = 5 * Tr / 10
+// const CUERPO consA[DEM] = {1000, 1400};
+// const CUERPO consB[NUM] = {-6000, 4400};
+
+//dif adelante Ts = Tr / 10
+//  const CUERPO consA[DEM] = {1000, -520};
+//  const CUERPO consB[NUM] = {-6000, 5680};
+
+// trapesoidal Ts = Tr / 100
+// const CUERPO consB[NUM] = {-6016, 5984};
+// const CUERPO consA[DEM] = {1024, -976};
+
+// trapesoidal Ts = 10 * Tr / 10
+// const CUERPO consA[DEM] = {3400, 1400};
+// const CUERPO consB[NUM] = {-7600, 4400};
 
 // trapesoidal Ts = Tr / 10
 // const CUERPO consB[NUM] = {-6160, 5840};
 // const CUERPO consA[DEM] = {1240, -760};
 
-// trapesoidal Ts = 10 * Tr
-// const CUERPO consB[NUM] = {-7600, 4400};
-// const CUERPO consA[DEM] = {3400, 1400};
+// invarianza al escalón Ts = Tr / 100
+//  const CUERPO consA[DEM] = {300, -285};
+//  const CUERPO consB[NUM] = {-1800, 1790};
 
 // invarianza al escalón Ts = Tr / 10
 // const CUERPO consA[DEM] = {300, -185};
 // const CUERPO consB[NUM] = {-1800, 1723};
+
+// invarianza al escalón Ts = 5*Tr / 10
+// const CUERPO consA[DEM] = {300, -27.21};
+// const CUERPO consB[NUM] = {-1800, 1618};
+
+// invarianza al escalón Ts = 4 * Tr / 10
+// const CUERPO consA[DEM] = {300, -44};
+// const CUERPO consB[NUM] = {-1800, 1629};
 
 void output(uint8_t inValue, uint8_t outValue, int16_t inInternal, int16_t outInternal)
 {
@@ -194,7 +229,7 @@ void loop()
 #define OFFIN 512
 
   // input mapping from 12 bits
-  error[0] = map(in, 0, 1023, OFFIN, -OFFIN);
+  error[0] = map(in, 0, 1023, OFFIN + 20, -OFFIN + 20);
 
   /*
   * u[k] calc:
@@ -239,7 +274,7 @@ void loop()
   // reset current state and error:
   // u[k] = 0; e[k] = 0
 
-  smartDelay(Ts / pot * 1000);
+  smartDelay(Ts);
   state[0] = 0;
   error[0] = 0;
 }
