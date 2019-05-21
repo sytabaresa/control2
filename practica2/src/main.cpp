@@ -1,14 +1,7 @@
 #include <Arduino.h>
-#include <LiquidCrystal.h>
 
 // analog input in
 #define IN A5
-
-// rising/falling detector pin
-#define TRIG A4
-
-// Ts input pin
-#define POT A7
 
 // DAC output pins
 #define D1 14
@@ -20,154 +13,123 @@
 #define D7 11
 #define D8 12
 
+// MCU pin mapping for DAC
 int outPins[] = {D8, D7, D6, D5, D4, D3, D2, D1};
 
-// LCD Display creation
-// const int rs = 8, en = 7, d4 = 6, d5 = 5, d6 = 4, d7 = 3;
-// LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
-
-// Base Tr
-#define TrMax 800000
-
-// IMPORTANTE: comentar y descomentar segun los controladores
-// #define Ts TrMax / 100
-#define Ts TrMax / 10
-// #define n 5 // multiplicador para los controladores con este coeficiente
-// #define Ts TrMax / 10 * n
-
-
-// global variables
-uint8_t pot = 0;
+/*
+ * Global variables
+ */
 uint16_t in = 0;
 uint8_t out = 0;
 
-// Control variables
-
 /**
+ * Control variables:
+ * 
  *          b0 + b1*z^(-1) + b2*z^(-2) + ... + bn*z^(-n)
  * C(z) = -------------------------------------------------
  *          a0 + a1*z^(-1) + a2*z^(-2) + ... + an*z^(-m)
  * 
- * constA = [a0, a1, a2, ... , an] (length m ==> DEM = m)
+ * constA = [a0, a1, a2, ... , an] (length m ==> DEN = m)
  * constB = [b0, b1, b2, ... , bn] (length n ==> NUM = n)
  */
 
-#define CUERPO double //cuerpo para los cálculos (int8_t, int16_t, int32_t, float, double, ...)
-
-#define NUM 2 // n
-#define DEM 2 // m
-
-// [e[0], e[1], e[2], ..., e[n]]
-CUERPO error[NUM];
-
-// [u[0], u[1], u[2], ..., u[m]]
-CUERPO state[DEM];
+#define FIELD double //FIELD for the calcs (int8_t, int16_t, int32_t, float, double, ...)
 
 /*
+ * Numerator and Denominator order, very important to calculate the size of error and state arrays
+ */
+#define NUM 2 // NUM -> n
+#define DEN 2 // DEN -> m
+
+// [e[k], e[k-1], e[k-2], ..., e[k-n]]
+FIELD error[NUM];
+
+// [u[k], u[k-1], u[k-2], ..., u[k-m]]
+FIELD state[DEN];
+
+#define TrMax 800000  // Base Tr
+#define Ts TrMax / 10 //  Tr/12 < Ts < Tr/8
+
+/*
+ * IMPORTANT: comment and uncomment acording to the controllers
+ */
+
+// #define T Ts / 10
+#define T Ts
+// #define n 5 // n is the multiplicator for the controller with this coeff.
+// #define T n * Ts
+
+/**
 * controllers:
-* comentar y descomentar segun el controlador a probar. ver tambien la deficion de Ts.
+* Comment and uncomment according to controller in testing, see also T and NUM/DEN definition above
 */
 
-//unitario
-// const CUERPO consB[NUM] = {1};
-// const CUERPO consA[DEM] = {1};
+// ZOH (NUM = 1 and DEN = 1)
+// const FIELD consB[NUM] = {1};
+// const FIELD consA[DEN] = {1};
 
-// dif atras Ts = Tr / 100
-const CUERPO consA[DEM] = {1048, -1000};
-const CUERPO consB[NUM] = {-6032, 6000};
+// Backward difference T = Ts / 10
+const FIELD consA[DEN] = {1048, -1000};
+const FIELD consB[NUM] = {-6032, 6000};
 
-// dif atras Ts = Tr / 10
-// const CUERPO consA[DEM] = {1468, -1000};
-// const CUERPO consB[NUM] = {-6312, 6000};
+// Backward difference T = Ts
+// const FIELD consA[DEN] = {1468, -1000};
+// const FIELD consB[NUM] = {-6312, 6000};
 
-// dif atras Ts = 7 * Tr / 10
-// const CUERPO consA[DEM] = {4360, -1000};
-// const CUERPO consB[NUM] = {-8240, 6000};
+// Backward difference T = 7 * Ts
+// const FIELD consA[DEN] = {4360, -1000};
+// const FIELD consB[NUM] = {-8240, 6000};
 
-//dif adelante Ts = Tr / 100
-//  const CUERPO consA[DEM] = {1000, -952};
-//  const CUERPO consB[NUM] = {-6000, 5968};
+// Forward difference T = Ts / 10
+//  const FIELD consA[DEN] = {1000, -952};
+//  const FIELD consB[NUM] = {-6000, 5968};
 
-// dif adelante Ts = 4 * Tr / 10
-// const CUERPO consA[DEM] = {1000, 919};
-// const CUERPO consB[NUM] = {-6000, 4720};
+// Forward difference T = Ts
+//  const FIELD consA[DEN] = {1000, -520};
+//  const FIELD consB[NUM] = {-6000, 5680};
 
-// dif adelante Ts = 5 * Tr / 10
-// const CUERPO consA[DEM] = {1000, 1400};
-// const CUERPO consB[NUM] = {-6000, 4400};
+// Forward difference T = 4 * Ts
+// const FIELD consA[DEN] = {1000, 919};
+// const FIELD consB[NUM] = {-6000, 4720};
 
-//dif adelante Ts = Tr / 10
-//  const CUERPO consA[DEM] = {1000, -520};
-//  const CUERPO consB[NUM] = {-6000, 5680};
+// Forward difference T = 5 * Ts (doesn't work)
+// const FIELD consA[DEN] = {1000, 1400};
+// const FIELD consB[NUM] = {-6000, 4400};
 
-// trapesoidal Ts = Tr / 100
-// const CUERPO consB[NUM] = {-6016, 5984};
-// const CUERPO consA[DEM] = {1024, -976};
+// Tustin’s approximation T = Ts / 10
+// const FIELD consB[NUM] = {-6016, 5984};
+// const FIELD consA[DEN] = {1024, -976};
 
-// trapesoidal Ts = 10 * Tr / 10
-// const CUERPO consA[DEM] = {3400, 1400};
-// const CUERPO consB[NUM] = {-7600, 4400};
+// Tustin’s approximation T = 10 * Ts
+// const FIELD consA[DEN] = {3400, 1400};
+// const FIELD consB[NUM] = {-7600, 4400};
 
-// trapesoidal Ts = Tr / 10
-// const CUERPO consB[NUM] = {-6160, 5840};
-// const CUERPO consA[DEM] = {1240, -760};
+// Tustin’s approximation T = Ts
+// const FIELD consB[NUM] = {-6160, 5840};
+// const FIELD consA[DEN] = {1240, -760};
 
-// invarianza al escalón Ts = Tr / 100
-//  const CUERPO consA[DEM] = {300, -285};
-//  const CUERPO consB[NUM] = {-1800, 1790};
+// Step invariance T = Ts / 10
+//  const FIELD consA[DEN] = {300, -285};
+//  const FIELD consB[NUM] = {-1800, 1790};
 
-// invarianza al escalón Ts = Tr / 10
-// const CUERPO consA[DEM] = {300, -185};
-// const CUERPO consB[NUM] = {-1800, 1723};
+// Step invariance  T = Ts
+// const FIELD consA[DEN] = {300, -185};
+// const FIELD consB[NUM] = {-1800, 1723};
 
-// invarianza al escalón Ts = 5*Tr / 10
-// const CUERPO consA[DEM] = {300, -27.21};
-// const CUERPO consB[NUM] = {-1800, 1618};
+// Step invariance  T = 5 * Ts
+// const FIELD consA[DEN] = {300, -27.21};
+// const FIELD consB[NUM] = {-1800, 1618};
 
-// invarianza al escalón Ts = 4 * Tr / 10
-// const CUERPO consA[DEM] = {300, -44};
-// const CUERPO consB[NUM] = {-1800, 1629};
+// Step invariance  T = 4 * Ts
+// const FIELD consA[DEN] = {300, -44};
+// const FIELD consB[NUM] = {-1800, 1629};
 
-void output(uint8_t inValue, uint8_t outValue, int16_t inInternal, int16_t outInternal)
-{
-  // lcd.clear();
-  // lcd.setCursor(0, 0);
-
-  pot = analogRead(POT) >> 2;
-  pot = map(pot, 0, 255, 1, 100);
-  // lcd.print(" Ts/");
-  // lcd.print(pot);
-  // pot < 10 ? lcd.print(" ") : 0;
-  for (int i = 7; i >= 0; i--)
-  {
-    uint8_t v = (outValue >> i) & 0x01;
-    digitalWrite(outPins[i], v);
-  }
-}
-
-#define TRIGGER 20
 void smartDelay(unsigned long us)
 {
-  // uint16_t out = analogRead(TRIG);
-  // uint16_t out1 = out;
   unsigned long fin = micros() + us;
   do
   {
-// out = analogRead(TRIG);
-// // Serial.print("salida");
-// // Serial.println(out);
-// if (abs(out - out1) > TRIGGER)
-// {
-//   // Update registers to new values
-//   for (int i = 0; i < DEM; i++)
-//     state[i] = 0;
 
-//   for (int i = 0; i < NUM; i++)
-//     error[i] = 0;
-
-//   return analogRead(IN);
-// }
-// out1 = out;
 #if DEBUG
     Serial.print(in);
     Serial.print(",");
@@ -176,8 +138,6 @@ void smartDelay(unsigned long us)
     Serial.print(state[0]);
     Serial.print(",");
     Serial.print(out);
-    Serial.print(",");
-    Serial.println(pot);
 
 #endif
   } while (micros() < fin);
@@ -190,27 +150,23 @@ void smartDelay(unsigned long us)
 void setup()
 {
 #ifdef DEBUG
+  // Serial begin
   Serial.begin(115200);
 #endif
-  // LCD config
-  // lcd.begin(16, 2);
 
   // analog input config
   pinMode(IN, INPUT);
-
-  // sampling time input config
-  pinMode(POT, INPUT);
-
+  
   // DAC outputs config
   for (int i = 0; i < 8; i++)
     pinMode(outPins[i], OUTPUT);
 
   // initialize control state
-  // e[i] = 0
+  // e[k-i] = 0
   for (int i = 0; i < NUM; i++)
     error[i] = 0;
-  // u[i] = 0
-  for (int i = 0; i < DEM; i++)
+  // u[k-i] = 0
+  for (int i = 0; i < DEN; i++)
     state[i] = 0;
 }
 
@@ -221,31 +177,30 @@ void setup()
 */
 void loop()
 {
+  // reset current state and error:
+  // e[k] = 0 and u[k] = 0
+  state[0] = 0;
+  error[0] = 0;
 
   // Ts delay and e[k] read in Ts
   in = analogRead(IN);
 
 // scale
 #define OFFIN 512
-
+#define FIX 20
   // input mapping from 12 bits
-  error[0] = map(in, 0, 1023, OFFIN + 20, -OFFIN + 20);
+  error[0] = map(in, 0, 1023, OFFIN + FIX, -OFFIN + FIX);
 
   /*
   * u[k] calc:
   */
-
   //STATE: -an * u[k-n]
-  for (int i = 1; i < DEM; i++)
-  {
+  for (int i = 1; i < DEN; i++)
     state[0] -= consA[i] * state[i];
-  }
 
   //ERROR: bn * e[k-n]
   for (int i = 0; i < NUM; i++)
-  {
     state[0] += consB[i] * error[i];
-  }
 
   // over a0
   state[0] /= consA[0];
@@ -253,28 +208,29 @@ void loop()
   /*
    * output u[k]
    */
-
   // saturation of values
   state[0] = state[0] > OFFIN ? OFFIN : state[0];
   state[0] = state[0] < -OFFIN ? -OFFIN : state[0];
 
-  // output mapping to 8 bits
+  // output mapping to 8 bits DAC
   out = map(state[0], -OFFIN, OFFIN, 0, 255);
-  output(in, out, error[0], state[0]);
+  for (int i = 7; i >= 0; i--)
+  {
+    uint8_t v = (out >> i) & 0x01;
+    digitalWrite(outPins[i], v);
+  }
 
-  // Update registers to new values
+  /**
+  * Update registers to new values
+  */
   // u[k] = u[k-1]
-  for (int i = DEM - 1; i > 0; i--)
+  for (int i = DEN - 1; i > 0; i--)
     state[i] = state[i - 1];
 
   // e[k] = e[k-1]
   for (int i = NUM - 1; i > 0; i--)
     error[i] = error[i - 1];
 
-  // reset current state and error:
-  // u[k] = 0; e[k] = 0
-
-  smartDelay(Ts);
-  state[0] = 0;
-  error[0] = 0;
+  // T delay for time and value hold
+  smartDelay(T);
 }
