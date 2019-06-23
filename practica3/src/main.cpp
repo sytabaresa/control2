@@ -24,8 +24,8 @@
 
 #define K .1
 #define ZERO 511
-#define DEAD 0.5
-#define MIN 10
+#define DEAD 0.6
+#define MIN 7
 #define LIM 100
 
 #define CUERPO double
@@ -75,10 +75,10 @@ void setup()
 
 void output(CUERPO value)
 {
+  value += sign(value)*MIN;
   value = value > LIM ? LIM : value;
   value = value < -LIM ? -LIM : value;
-  value = abs(value) < DEAD ? 0 : value;
-  value = abs(value) > DEAD && abs(value) < MIN ? sign(value) * MIN : value;
+  value = abs(value) < MIN+DEAD ? 0: value;
 
   digitalWrite(OUTApin, value > 0);
   digitalWrite(OUTBpin, value < 0);
