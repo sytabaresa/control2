@@ -14,7 +14,8 @@
 #define SENSORpin A0
 
 #define INpin A2
-#define BUTTONpin 12
+#define STOPpin 12
+#define BUTTONpin 11
 
 #define ENpin 7
 #define PWMpin 9
@@ -27,7 +28,7 @@
 
 #define CUERPO double
 
-uint8_t button = 0;
+int16_t pos = 0;
 uint16_t out, in, in2 = 0;
 CUERPO in1, ref, error = 0;
 
@@ -54,6 +55,7 @@ void setup()
   pinMode(SENSORpin, INPUT);
   pinMode(CURRENTpin, INPUT);
   pinMode(INpin, INPUT);
+  pinMode(STOPpin, INPUT_PULLUP);
   pinMode(BUTTONpin, INPUT_PULLUP);
 
   pinMode(ENpin, OUTPUT);
@@ -76,21 +78,31 @@ void output(int16_t value)
   analogWrite(PWMpin, value);
 }
 
+#define DES 40
+void resetPosition()
+{
+  position > 0 ? output(-DES) : output(DES);
+}
+
 void smartDelay(unsigned long us)
 {
   unsigned long fin = micros() + us;
   do
   {
-    button = digitalRead(BUTTONpin);
-    if (!button)
+    if (!digitalRead(BUTTONpin))
+    {
+      resetPosition();
+    }
+    if (!digitalRead(STOPpin))
     {
       output(0);
       out = ref = 0;
     }
+    pos = map(position, 0, DISTANCE, 0, 1024);
     rotating = true;
 
 #ifdef DEBUG
-    double t = in * 0.02434;
+    // double t = in * 0.02434;
     Serial.print(in);
     Serial.print(",");
     Serial.print(in1);
@@ -100,10 +112,10 @@ void smartDelay(unsigned long us)
     Serial.print(error);
     Serial.print(",");
     Serial.print(out);
+    // Serial.print(",");
+    // Serial.print(t);
     Serial.print(",");
-    Serial.print(t);
-    Serial.print(",");
-    Serial.println(position);
+    Serial.println(pos);
 #endif
   } while (micros() < fin);
   return;

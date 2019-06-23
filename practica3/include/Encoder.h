@@ -1,12 +1,13 @@
 #ifndef __ENCODER_H__
 #define __ENCODER_H__
 
-#define DISTANCE 219
+#define DEBOUNCE 30
+#define DISTANCE 90
 
 // constructor : sets pins as inputs and turns on pullup resistors
 static boolean rotating = false; // debounce management
 
-volatile uint16_t position = 0;
+volatile int16_t position = 0;
 
 int8_t pin_a;
 
@@ -35,7 +36,7 @@ void doEncoderA()
 {
   // debounce
   if (rotating)
-    delay(1); // wait a little until the bouncing is done
+    delay(DEBOUNCE); // wait a little until the bouncing is done
 
   // Test transition, did things really change?
   if (digitalRead(pin_a) != A_set)
@@ -55,7 +56,7 @@ void doEncoderA()
 void doEncoderB()
 {
   if (rotating)
-    delay(1);
+    delay(DEBOUNCE);
   if (digitalRead(pin_b) != B_set)
   {
     B_set = !B_set;
