@@ -22,15 +22,22 @@
 #define OUTApin 5
 #define OUTBpin 4
 
-#define K 1
+#define K .1
 #define ZERO 511
+#define DEAD 0.5
+#define MIN 10
 #define LIM 100
 
 #define CUERPO double
 
-int16_t pos = 0;
-uint16_t out, in, in2 = 0;
-CUERPO in1, ref, error = 0;
+uint16_t in, in2 = 0;
+CUERPO in1, ref, error, pos, out = 0;
+
+template <typename type>
+type sign(type value)
+{
+  return type((value > 0) - (value < 0));
+}
 
 /**
  * SETUP 
@@ -66,21 +73,23 @@ void setup()
   digitalWrite(ENpin, HIGH);
 }
 
-void output(int16_t value)
+void output(CUERPO value)
 {
   value = value > LIM ? LIM : value;
   value = value < -LIM ? -LIM : value;
+  value = abs(value) < DEAD ? 0 : value;
+  value = abs(value) > DEAD && abs(value) < MIN ? sign(value) * MIN : value;
 
   digitalWrite(OUTApin, value > 0);
   digitalWrite(OUTBpin, value < 0);
 
-  value = map(abs(value), 0, LIM, 0, 255);
-  analogWrite(PWMpin, value);
+  analogWrite(PWMpin, map(abs(value), 0, LIM, 0, 255));
 }
 
 #define DES 40
 void resetPosition()
 {
+  ref = 0;
   position > 0 ? output(-DES) : output(DES);
 }
 
@@ -96,17 +105,17 @@ void smartDelay(unsigned long us)
     if (!digitalRead(STOPpin))
     {
       output(0);
-      out = ref = 0;
+      out = 0;
     }
-    pos = map(position, 0, DISTANCE, 0, 1024);
+    pos = (CUERPO)map(position, 0, DISTANCE, 0, 1024);
     rotating = true;
 
 #ifdef DEBUG
     // double t = in * 0.02434;
-    Serial.print(in);
-    Serial.print(",");
-    Serial.print(in1);
-    Serial.print(",");
+    // Serial.print(in);
+    // Serial.print(",");
+    // Serial.print(in1);
+    // Serial.print(",");
     Serial.print(ref);
     Serial.print(",");
     Serial.print(error);
@@ -131,20 +140,31 @@ void loop()
   // in = analogRead(INpin);
   //in1 = map(in, 0, 1023, -LIM, LIM);
 
-  in = analogRead(SENSORpin);
-  in1 = map(in, 0, 1023, -LIM, LIM);
+  // in = analogRead(SENSORpin);
+  // in1 = map(in, 0, 1023, -LIM, LIM);
 
 #ifdef DEBUG
   while (Serial.available() > 0)
   {
-    ref = Serial.parseInt();
+    ref = Serial.parseFloat();
   }
-#endif
-  // error = ref - in1;
-  // out = K * error;
-  out = ref;
-  output(out);
 
+#endif
+  if (ref == -1)
+  {
+    output(-20);
+  }
+  if (ref == -2)
+  {
+    output(20);
+  }
+  else
+  {
+    error = ref - pos;
+    out = K * error;
+    // out = ref;
+    output(out);
+  }
   // Serial.print("in2: ");
   // Serial.println(in);
 
